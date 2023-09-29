@@ -1,32 +1,34 @@
 # k8sTraining
+
 Apache, Nginx, Jenkins, Istio, Kiali (for the moment)
 
-Check ***TrainingPathProject.pdf*** for full readme 😊
+Check**_TrainingPathProject.pdf_**for full readme 😊
 
 To deploy the whole scenario execute:
 
-``` bash
+```bash
 ./autoDeploy.sh
 ```
 
 If you'd rather play it slowly, just:
-``` bash
+
+```bash
 git clone https://github.com/huzmgod/k8sTraining.git
 cd k8sTraining
 ```
-***-----------------------------------------------------------------------------------------------------------------------***
 
+**_-----------------------------------------------------------------------------------------------------------------------_**
 
-***Spanish Full README (without images, which are in the pdf):***
+**_Spanish Full README (without images, which are in the pdf):_**
 
 **Setting up Nginx as a Reverse Proxy for Apache using K8s. Jenkins, Istio, K8s Dashboard and Kiali deployed**
 
-1. **Instalar kind: [https://kind.sigs.k8s.io/docs/user/quick-start/#installation](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)**
-1. **Crear archivo de configuración de cluster (cluster-config.yaml):**
+1.  **Instalar kind:<https://kind.sigs.k8s.io/docs/user/quick-start/#installation>**
+2.  **Create cluster configuration file (cluster-config.yaml):**
 
 cluster-config.yaml
 
-``` yaml
+```yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -36,27 +38,31 @@ nodes:
    hostPort: 30000
    protocol: TCP
 ```
-**NOTAS:**
 
-- el extraPortMappings es importante para entornos que usen Docker Desktop, porque sino  la  configuración  de  kind  impide  luego  acceder  a  contenidos  del  servidor Apache (u otro) a través de localhost:30000  (u otro puerto mayor que el 30000). Para más documentación: [https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings)**
+**GRADES:**
 
-- Se podrían añadir workers con la línea
-``` yaml
+-   The extraPortMappings is important for environments that use Docker Desktop, because otherwise the kind configuration prevents later accessing content from the Apache (or other) server through localhost:30000 (or another port larger than 30000). For more documentation:<https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings>\*\*
+
+-   Workers could be added with the line
+
+```yaml
 -role: worker
 ```
-3. **Crear el clúster y comprobar estado:**
 
-``` bash
+3.  **Create the cluster and check status:**
+
+```bash
 kind create cluster --config=cluster kubectl cluster-info
 kubectl cluster-info
 ```
 
-4. **Archivos de configuración de los pods (Apache y Nginx):**
+4.  **Pod configuration files (Apache and Nginx):**
 
-**NOTA:**  Tanto el service como el deployment están en el mismo yaml, para ahorrar  en kubectl apply -f. Se podría usar kustomize también para ahorrar tiempo de despliegue.
+**USE:**Both the service and the deployment are in the same yaml, to save on kubectl apply -f. You could also use kustomize to save deployment time.
 
 **nginx.yaml:**
-``` yaml
+
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -99,9 +105,10 @@ spec:
         configMap:
           name: nginx-conf
 ```
+
 apache.yaml:
 
-``` yaml
+```yaml
 
 apiVersion: v1
 kind: Service
@@ -145,11 +152,9 @@ spec:
           name: html
 ```
 
+5.  **Create the ConfigMap to configure nginx as a reverse proxy (nginx-conf.yaml)**
 
-
-5. **Crear el ConfigMap para configurar nginx como reverse proxy (nginx-conf.yaml)**
-
-``` yaml
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -176,43 +181,47 @@ data:
     }
 ```
 
-**NOTAS:**
+**GRADES:**
 
-- *La  directiva  worker\_connections  controla  el  número  máximo  de  conexiones simultáneas  que  pueden  ser  manejadas  por  un  worker  process  de  Nginx.  Se  debe escalar al tráfico, 1024 es un ejemplo.*
-- *Está mapeado el puerto 80 de apache al 8080 para evitar conflictos con el pod de nginx.*
+-   _The worker directive_connections controls the maximum number of simultaneous connections that can be handled by an Nginx worker process. It must be scaled to traffic, 1024 is an example._
+-   _Apache port 80 is mapped to 8080 to avoid conflicts with the nginx pod._
 
-6. **Aplicar configuraciones al clúster:**
+6.  **Apply configurations to the cluster:**
 
-``` bash
+```bash
 kubectl apply -f nginx.yaml
 kubectl apply -f apache.yaml
 kubectl apply -f nginx-conf.yaml
 ```
-Comprobamos que todo va bien
+
+We check that everything is going well
+
 ```bash
 kubectl get pods
 kubectl exec <nombre de tu pod de nginx> -- cat /etc/nginx/nginx.conf
 ```
 
-7. **Si tenemos un HTML personalizado lo podemos usar para verlo a través de nginx y asegurarnos de que todo está funcionando bien hasta aquí.**
+7.  **If we have custom HTML we can use it to view it through nginx and make sure everything is working well up to this point.**
 
-*Los ficheros que dejo se llaman custom.html y custom.css, pero pueden ser cualquier otros. Es un html de Dragon ball que está bastante guay.*
+_The files I leave are called custom.html and custom.css, but they can be any other. It's a Dragon ball html that's pretty cool._
 
-- **Creamos el ConfigMap de los ficheros html y css:**
+-   **We create the ConfigMap from the html and css files:**
 
 ```bash
 kubectl create configmap html --from-file=custom.html --from-file=custom.css
 ```
 
-NOTA: También se deja el fichero html.yaml como ConfigMap a aplicar con kubectl
+NOTE: The html.yaml file is also left as ConfigMap to be applied with kubectl
 
 ```bash
 apply -f html.yaml
 ```
-*Es equivalente al comando anterior.*
 
-- **Actualizamos el apache.yaml, creando un punto de montaje y especificando el volumen a utilizar:**
-``` yaml
+_It is equivalent to the previous command._
+
+-   **We update the apache.yaml, creating a mount point and specifying the volume to use:**
+
+```yaml
 ...
 spec:
       containers:
@@ -229,49 +238,52 @@ spec:
           name: html
 ```
 
-- **Aplicamos las configuraciones:**
+-   **We apply the configurations:**
 
 ```bash
 kubectl apply -f apache.yaml
 ```
 
-- **Comprobamos que todo se ha cargado y va correctamente el reverse proxy:**
+-   **We check that everything has been loaded and the reverse proxy is working correctly:**
 
 ```bash
 kubectl exec <nombre de tu pod de nginx> -- curl localhost/custom.html
 ```
 
-8. **Hasta aquí deberíamos tener esto bien configurado**
+8.  **By now we should have this configured correctly.**
 
-**Y a través de localhost:30000 accederíamos a nuestra página web custom.html**
+**And through localhost:30000 we would access our custom.html web page**
 
-9. **Si hasta aquí todo ha ido bien, genial, es lo que debería ser. Sino, he dejado un fichero kustomization.yaml que utiliza kustomize para levantar todo automáticamente. Si algo había ido mal, sigue los siguientes pasos:**
+9.  **If everything has gone well up to this point, great, that's what it should be. Otherwise, I have left a kustomization.yaml file that uses kustomize to build everything automatically. If something had gone wrong, follow the following steps:**
+
 ```bash
 kind delete cluster –-name=<nombreDeTuCluster>
 kind create cluster --config=cluster-config.yaml --name=<nombre-que-quieras>
 kubectl apply -k .
 ```
-**Todo listo. Haz las comprobaciones anteriores (nginx.conf, localhost:30000, etc.) NOTA:**
 
-- **Cuidado con copiar y pegar, los guiones no siempre se copian bien.**
-- **Ya sé que hubiera venido bien esto antes, pero tenemos que repasar todo desde el principio** 😊**.**
+**All ready. Do the above checks (nginx.conf, localhost:30000, etc.) NOTE:**
+
+-   **Be careful with copying and pasting, scripts do not always copy well.**
+-   **I know this would have been good sooner, but we have to go over everything from the beginning**😊**.**
 
 **---------------------------------- K8S DASHBOARD -----------------------------------------**
 
-**Lo  que  se  comenta  en  esta  sección  no  es  la  configuración  de  Istio,  sino  que  es  la configuración del  dashboard de K8s para kind. Está muy bien para ver métricas y ver el estado  del  clúster  (más  info  en  [https://istio.io/latest/docs/setup/platform - setup/kind/#setup-dashboard-ui-for-kind):** ](https://istio.io/latest/docs/setup/platform-setup/kind/#setup-dashboard-ui-for-kind)**
+**What is discussed in this section is not the Istio configuration, but rather the configuration of the K8s dashboard for kind. It is very good to see metrics and see the status of the cluster (more info in \[<https://istio.io/latest/docs/setup/platform>- setup/kind/#setup-dashboard-ui-for-kind):**](<https://istio.io/latest/docs/setup/platform-setup/kind/#setup-dashboard-ui-for-kind>)\*\*
 
-1. **Desplegamos el deployment del dashboard:**
+1.  **We deploy the dashboard deployment:**
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommende d.yaml --validate=false
 ```
 
-2. **Verificamos que está disponible el pod y que se han creado bien:
+2.  \*\*We verify that the pod is available and that it has been created correctly:
+
 ```bash
 kubectl get pod -n kubernetes-dashboard
 ```
 
-3. **Creamos un ServiceAccount y un ClusterRoleBinding para dar accesos de administrador al clúster:**
+3.  **We create a ServiceAccount and a ClusterRoleBinding to give administrator access to the cluster:**
 
 ```bash
 kubectl create serviceaccount -n kubernetes-dashboard admin-user
@@ -279,27 +291,29 @@ kubectl create serviceaccount -n kubernetes-dashboard admin-user
 kubectl create clusterrolebinding  -n kubernetes-dashboard admin-user  --clusterrole cluster-admin --serviceaccount=kubernetes-dashboard:admin-user
 ```
 
-4. **Generamos el token que nos pedirá luego para iniciar sesión:**
+4.  **We generate the token that it will then ask us to log in:**
 
 ```bash
 token=$(kubectl  -n  kubernetes-dashboard  describe  secret  $(kubectl  -n  kubernetes - dashboard get secret | awk '/^admin-user/{print $1}') | awk '$1=="token:"{print $2}')
 ```
-5. **Comprobamos que se ha almacenado bien en la variable token: echo $token**
-6. **Podemos acceder al Dashboard por CLI escribiendo:**
+
+5.  **We check that it has been stored correctly in the token variable: echo $token**
+6.  **We can access the Dashboard through CLI by writing:**
 
 ```bash
 kubectl proxy
 ```
-**Ahora  podemos  acceder  desde  el  navegador  en [http://localhost:8001/api/v1/namespaces/kubernetes - dashboard/services/https:kubernetes-dashboard:/proxy/#/login**](http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login)**
 
-7. **Accedemos al  dashboard del clúster  desde la web, una vez introducido el token  (ej. Servicios, etc.):**
+**Now we can access from the browser at \[http&#x3A;//localhost:8001/api/v1/namespaces/kubernetes - dashboard/services/https&#x3A;kubernetes-dashboard:/proxy/#/login**](http&#x3A;//localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https&#x3A;kubernetes-dashboard:/proxy/#/login)\*\*
 
+7.  **We access the cluster dashboard from the web, once the token has been entered (e.g. Services, etc.):**
 
 **------------------------------------------------ JENKINS ------------------------------------------**
 
-1. **Para completar el clúster, vamos a introducir Jenkins también. Crearemos un servicio de tipo NodePort mapeado al hostPort 30001, como veremos. El fichero yaml que contiene el deployment y el service es:**
+1.  **To complete the cluster, we are going to introduce Jenkins as well. We will create a service of type NodePort mapped to hostPort 30001, as we will see. The yaml file that contains the deployment and the service is:**
 
 **jenkins.yaml:**
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -337,22 +351,23 @@ spec:
             - containerPort: 50000
 ```
 
-2. **En este punto, nos estaremos preguntando que dónde vamos a exponer Jenkins. La idea sería  hacerlo  a  través  de  nginx  en  “location  jenkins/”  y  acceder  a  través  de localhost:30000/jenkins -solo habría que modificar nginx-conf.yaml y agregar**
-```
-location /jenkins {
+2.  **At this point, we will be wondering where we are going to expose Jenkins. The idea would be to do it through nginx in “location jenkins/” and access through localhost:30000/jenkins - you would only have to modify nginx-conf.yaml and add**
 
-    proxy\_pass http://<jenkinsPodUsedIp>:30001/;
-    proxy\_set\_header Host $host;
-    proxy\_set\_header X-Real-IP $remote\_addr;
-    proxy\_set\_header X-Forwarded-For $proxy\_add\_x\_forwarded\_for; proxy\_set\_header X-Forwarded-Proto $scheme;
 
-}
-```
-*En mi caso, no puedo hacerlo así por problemas de compatibilidad de kind con wsl2. Para  ello,  he  modificado  el  fichero  cluster-config.yaml,  escribiendo  los extraPortMappings que necesitaremos más adelante. Además, he añadido un par de workers y he añadido una etiqueta en el máster para agregar un ingress controller más adelante:*
+    location /jenkins {
+
+        proxy\_pass http://<jenkinsPodUsedIp>:30001/;
+        proxy\_set\_header Host $host;
+        proxy\_set\_header X-Real-IP $remote\_addr;
+        proxy\_set\_header X-Forwarded-For $proxy\_add\_x\_forwarded\_for; proxy\_set\_header X-Forwarded-Proto $scheme;
+
+    }
+
+_In my case, I can't do it like this due to kind compatibility problems with wsl2. To do this, I have modified the cluster-config.yaml file, writing the extraPortMappings that we will need later. Additionally, I've added a couple of workers and added a tag in the master to add an ingress controller later:_
 
 **cluster-config.yaml**
 
-``` yaml
+```yaml
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -383,41 +398,43 @@ nodes:
 - role: worker
 ```
 
-3. **Ahora bien, puedes seguir con tu cluster y agregar  Jenkins. Si en algún momento te has perdido, hay un fichero llamado autoDeploy.sh que te levanta el escenario entero. Comenta las partes a las que no has llegado para probar a hacerlas tú y ejecuta:**
+3.  **Now, you can continue with your cluster and add Jenkins. If at any point you have gotten lost, there is a file called autoDeploy.sh that shows you the entire scenario. Comment on the parts you haven't reached so you can try doing them yourself and execute:**
 
 ```bash
 ./autoDeploy.sh
 ```
 
-4. **Finalmente, podemos acceder a nginx a través de localhost:30000 y a Jenkins a través de localhost:30001. Lo de nginx ya sabemos cómo va, pasemos a Jenkins:**
-- *Unlock Jenkins:* **necesitamos la contraseña inicial. Ejecutamos:**
-``` bash
+4.  **Finally, we can access nginx through localhost:30000 and Jenkins through localhost:30001. We already know how nginx goes, let's move on to Jenkins:**
+
+-   _Unlock Jenkins:_**we need the initial password. We execute:**
+
+```bash
 kubectl get pods
 kubectl exec <nombre-pod-jenkins> -- cat** /var/jenkins\_home/secrets/initialAdminPassword**
 ```
 
-- **Nos vamos a localhost:30001 e introducimos la contraseña inicial.**
+-   **We go to localhost:30001 and enter the initial password.**
 
-- **¡Instala los plugins recomendados, crea tu usuario de administrador y listo!**
+-   **Install the recommended plugins, create your administrator user and that's it!**
 
-**NOTAS:**
+**GRADES:**
 
-- **Si  quieres  utilizar  un  nombre  más  llamativo  que  “localhost”,  puedes  modificar  el fichero  /etc/hosts  de  tu  máquina  añadiendo  la  línea  127.0.0.1  <nombre-de-dominio-guay>. Obtendrías algo como esto:**
+-   **If you want to use a more attractive name than “localhost”, you can modify the /etc/hosts file on your machine by adding the line 127.0.0.1<nombre-de-dominio-guay>. You would get something like this:**
 
-- **Siempre es recomendable trabajar con diferentes namespaces (ej, pre, pro, dev, etc.). No lo hacemos en esta breve práctica para no complicar más el asunto, pero lo suyo sería separar Jenkins de los otros servicios, etc.**
+-   **It is always advisable to work with different namespaces (e.g. pre, pro, dev, etc.). We do not do it in this brief practice so as not to complicate the matter further, but the best thing to do would be to separate Jenkins from the other services, etc.**
 
-**----------------------------------------- ISTIO -------------------------------------**
+**----------------------------------------- THIS -------- -----------------------------**
 
+**We pass to Istio. Due to my little experience and the documentation I have read, Istio causes a lot of problems working with a local cluster since, among other things, we do not manage traffic from outside. Therefore, the configurations that we are going to make are not excessively complex, but are rather illustrative of what the usefulness of the service is.**
 
-**Pasamos a Istio. Por mi poca experiencia y la documentación que he leído, Istio da muchos problemas trabajando con un clúster en local  ya que, entre otras  cosas,  no  gestionamos tráfico del exterior. Por ello, las configuraciones que vamos a hacer no son excesivamente complejas, sino que son más bien ilustrativas de cuál es la utilidad del servicio.**
+**First of all:**
 
-**Antes de nada:**
+-   _The "Gateway" is an Istio component that acts as an entrypoint for external traffic entering the cluster._
+-   _The "VirtualService" is an Istio object that allows you to define how traffic should be directed from the Gateway to the back-end services in the cluster._
 
-- *El "Gateway" es un componente de Istio que actúa como entrypoint para el tráfico externo que ingresa al clúster.*
-- *El "VirtualService" es un objeto de Istio que permite definir cómo el tráfico debe ser dirigido desde el Gateway hacia los servicios back-end en el clúster.*
+10. **Installing Istio in cluster:**
 
-10. **Instalación de Istio en clúster:**
-- **Descarga e instalación de Istio:**
+-   **Download and install Istio:**
 
 ```bash
 curl -L https://istio.io/downloadIstio | sh -
@@ -425,36 +442,37 @@ cd istio-*
 export PATH=$PWD/bin:$PATH
 ```
 
-- **Comprobar que los CRDs están instalados con:**
+-   **Check that the CRDs are installed with:**
 
 ```bash
 kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
 ```
 
-- **Si obtenemos 0, ejecutar:**
+-   **If we get 0, execute:**
 
 ```bash
 istioctl install --set profile=default
 ```
 
-- **Comprobar que funciona  todo  y que se ha creado un ingress  Gateway  y un pod de istio:**
+-   **Check that everything works and that an ingress gateway and an istio pod have been created:**
 
 ```bash
 kubectl get pods -n istio-system
 ```
 
-- **Habilitar Istio para el namespace en el que están desplegados los pods de Apache, Nginx y jenkins:**
+-   **Enable Istio for the namespace in which the Apache, Nginx and Jenkins pods are deployed:**
 
-``` bash
+```bash
 kubectl label namespace default istio-injection=enabled
 ```
 
-11. **Para hacer una configuración sencilla de Istio en este escenario, podríamos agregar un balanceador de carga para el servicio de nginx utilizando el control de tráfico de Istio. Para ello:**
-- **Generar un balanceador de carga para el servicio de nginx. Creamos un VirtualService y un Gateway en Istio para nginx:**
+11. **To do a simple Istio setup in this scenario, we could add a load balancer for the nginx service using Istio traffic control. For it:**
+
+-   **Generate a load balancer for the nginx service. We create a VirtualService and a Gateway in Istio for nginx:**
 
 **loadBalancerNginx.yaml:**
 
-``` yaml
+```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -490,15 +508,16 @@ spec:
     - "*"
 
 ```
+
 ```bash
 kubectl apply -f loadBalancerNginx.yaml
 ```
 
-**NOTAS:**
+**GRADES:**
 
-- **Teóricamente deberíamos poder acceder a nginx a través de http://<nodeIP>:30000. En realidad, por trabajar en local kind nos pone las cosas más difíciles ya que nuestro  entorno no soporta balanceadores de carga externos. Esto  no se arregla sin modificar el fichero de configuración del kubelet, el cluster-config, etc. Si se soportara un balanceador externo, el procedimiento sería modificar los exports de la siguiente forma (en mi caso para wsl2):**
+-   **Theoretically we should be able to access nginx through http&#x3A;//<nodeIP>:30000. In reality, working on local kind makes things more difficult for us since our environment does not support external load balancers. This cannot be fixed without modifying the kubelet configuration file, cluster-config, etc. If an external balancer were supported, the procedure would be to modify the exports as follows (in my case for wsl2):**
 
-``` bash
+```bash
 export INGRESS_NAME=istio-ingressgateway
 export INGRESS_NS=istio-system
 
@@ -510,9 +529,10 @@ echo "INGRESS_HOST=$INGRESS_HOST, INGRESS_PORT=$INGRESS_PORT"
 
 export GATEWAY_URL=$INGRESS_HOST:$INGRESS_PORT
 ```
-**El fichero nginx-nodeport.yaml, por si quieres trastear con él, es: nginx-nodeport.yaml:**
 
-``` bash
+**The nginx-nodeport.yaml file, in case you want to mess around with it, is: nginx-nodeport.yaml:**
+
+```bash
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -532,7 +552,7 @@ spec:
           number: 80
 ```
 
-- **Es posible que haya que reiniciar los deployments (o hacer un delete de los pods) para que tengan istio inyectado:**
+-   **It is possible that you will have to restart the deployments (or delete the pods) so that they have istio injected:**
 
 ```bash
 kubectl rollout restart deployment nginx
@@ -540,60 +560,62 @@ kubectl rollout restart deployment apache
 kubectl delete pods --all**
 ```
 
-- **Comprobar que todo funciona bien con:**
-``` bash
+-   **Check that everything works well with:**
+
+```bash
 istioctl analyze
 kubectl get gateway
 kubectl get vs
 ```
 
-**---------------------------------------  KIALI  -----------------------------------------**
+**--------------------------------------- KIALI ---------- ------------------------------**
 
-**Suponiendo que ya tenemos un balanceador de carga que redirige todo hacia el reverse-proxy de  nginx,  procedemos  a  ver  la  siguiente  herramienta.  Kiali  es  una  herramienta  de tracking/dashboards de Istio que proporciona visualizaciones y análisis de la topología de servicios de Istio y la información de tráfico de red. Se suele usar siempre que Istio esté configurado (como Grafana si está Prometheus o Kibana si está Elastic-Search configurado). Vamos a instalarlo:**
+**Assuming that we already have a load balancer that redirects everything to the nginx reverse-proxy, we proceed to see the following tool. Kiali is an Istio tracking/dashboard tool that provides visualizations and analysis of Istio service topology and network traffic information. It is typically used whenever Istio is configured (such as Grafana if Prometheus is configured or Kibana if Elastic-Search is configured). Let's install it:**
 
-12. **Instalar kiali:**
-
+12. **Installer:**
 
 ```bash
 kubectl  apply  -f  https://raw.githubuserconten 1.17/samples/addons/kiali.yaml --validate=false**
 ```
 
-13. **Chequear instalación:**
+13. **Check installation:**
 
-``` bash
+```bash
 kubectl -n istio-system get svc kiali
 ```
 
-14. **Usar el dashboard:**
+14. **Use the dashboard:**
 
-``` bash
+```bash
 istioctl dashboard kiali
 ```
 
-**CONCLUSIÓN:**
+**CONCLUSION:**
 
-**Istio es un servicio muy completo, que se puede integrar con prometheus, el propio dashboard de Kubernetes, y muchísimos servicios y plataformas más. Mejoraremos las configuraciones de Istio en las siguientes prácticas donde, entre otras cosas, instalaremos Prometheus a través de Istio, y nos centraremos más en la monitorización del clúster.**
+**Istio is a very complete service that can be integrated with Prometheus, the Kubernetes dashboard itself, and many other services and platforms. We will improve Istio configurations in the next labs where, among other things, we will install Prometheus through Istio, and focus more on cluster monitoring.**
 
-**NOTAS IMPORTANTE:**
+**IMPORTANT NOTES:**
 
--	Todo el escenario se puede montar ejecutando el fichero autoDeploy.py, por si en algún momento hay algún problema. El fichero acepta un solo input, que es el nombre del clúster. Si quieres dejarlo por defecto, el nombre es “trainingPath” (pulsa Enter).
+-   The entire scenario can be assembled by running the autoDeploy.py file, in case there is ever a problem. The file accepts a single input, which is the name of the cluster. If you want to leave it as default, the name is “trainingPath” (press Enter).
+
 ```bash
 python3 autoDeploy.py
 ```
 
--	Si estás usando wsl2 o alguna distro Linux, utiliza mejor el fichero autoDeploy.sh, ya que evita posibles problemas con los exports de python. En un directorio vacío hay que ejecutar:
+-   If you are using wsl2 or a Linux distro, it is better to use the autoDeploy.sh file, as it avoids possible problems with python exports. In an empty directory you have to execute:
 
 ```bash
 ./autoDeploy.sh
 ```
 
--	Importante modificar la versión de Istio a instalar (latest en https://istio.io/downloadIstio)
+-   It is important to modify the version of Istio to install (latest in<https://istio.io/downloadIstio>)
 
+**Relevant Istio References:**
 
-**Referencias relevantes de Istio:**
+-   <https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/#using-node-ports-of-the-ingress-gateway-service>
 
-- https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/#using-node-ports-of-the-ingress-gateway-service
-- https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/#using-node-ports-of-the-ingress-gateway-service
+-   <https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/#using-node-ports-of-the-ingress-gateway-service>
 
-- https://istio.io/latest/docs/examples/bookinfo/#determine-the-ingress-ip-and-port
-- https://istio.io/latest/docs/examples/bookinfo/#determine-the-ingress-ip-and-port
+-   <https://istio.io/latest/docs/examples/bookinfo/#determine-the-ingress-ip-and-port>
+
+-   <https://istio.io/latest/docs/examples/bookinfo/#determine-the-ingress-ip-and-port>
