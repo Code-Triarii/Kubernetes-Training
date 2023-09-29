@@ -1,6 +1,13 @@
-# k8sTraining
+# Kubernetes Training Activities
 
-Apache, Nginx, Jenkins, Istio, Kiali (for the moment)
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-blue?style=flat&logo=python" alt="Python"></a>
+  <a href="https://kubernetes.io/"><img src="https://img.shields.io/badge/Kubernetes-green?style=flat&logo=kubernetes" alt="Kubernetes"></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-lightblue?style=flat&logo=docker" alt="Docker"></a>
+  <a href="https://kiali.io/"><img src="https://img.shields.io/badge/Kiali-red?style=flat&logo=kiali" alt="Kiali"></a>
+  <a href="https://www.jenkins.io/"><img src="https://img.shields.io/badge/Jenkins-yellow?style=flat&logo=jenkins" alt="Jenkins"></a>
+  <a href="https://istio.io/"><img src="https://img.shields.io/badge/Istio-cyan?style=flat&logo=istio" alt="Istio"></a>
+</p>
 
 Check**_TrainingPathProject.pdf_**for full readme 😊
 
